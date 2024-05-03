@@ -1,0 +1,192 @@
+#include <signal.h>
+#include <errno.h>
+#include <strings.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <pthread.h>
+#include "headers/myudp.h"
+#include "headers/utilities.h"
+#include "headers/udp_procedures.h"
+#include "headers/queue.h"
+#include <stdbool.h>
+
+int socket_fd;
+int host_id;
+HostInfo *hosts;
+JobQueue queue;
+int counter = 0;
+int local_data[128];
+
+// Declaration of thread condition variable
+pthread_cond_t cond1 = PTHREAD_COND_INITIALIZER;
+// declaring mutex
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+// critical region signal
+bool in_cr = false;
+
+void printsin(struct sockaddr_in *sin, char *m1, char *m2)
+{
+
+    printf("%s %s:\n", m1, m2);
+    printf("  family %d, addr %s, port %d\n", sin->sin_family,
+           inet_ntoa(sin->sin_addr), ntohs((unsigned short)(sin->sin_port)));
+}
+
+void *printer_thread(void *arg)
+{
+    while (1)
+    {
+        sleep(3);
+        printQueue(&queue);
+    }
+}
+
+void *resolver_thread(void *arg)
+{
+    struct msg_packet *mymsg;
+    while (1)
+    {
+        if (queue.front)
+        {
+            pthread_mutex_lock(&lock);
+            if (in_cr)
+            {
+                pthread_cond_wait(&cond1, &lock);
+            }
+            else
+            {
+                in_cr = true;
+                mymsg = dequeue(&queue);
+                printf("Dequeued a message! \n");
+                printQueue(&queue);
+                in_cr = false;
+                pthread_cond_signal(&cond1);
+            }
+            pthread_mutex_unlock(&lock);
+
+            if (mymsg->cmd == WRITE)
+            {
+                printf("Write command\n");
+            }
+        }
+    }
+}
+
+void *listener_thread(void *arg)
+{
+    struct msg_packet msg;
+    socklen_t fsize;
+    struct sockaddr_in from;
+    int cc;
+
+    initializeQueue(&queue);
+
+    // printf("Thread created\n");
+    while (1)
+    {
+        fsize = sizeof(from);
+        cc = recvfrom(socket_fd, &msg, sizeof(struct msg_packet), 0, (struct sockaddr *)&from, &fsize);
+        if (cc < 0)
+            perror("recv_udp:recvfrom");
+        // printsin(&from, "recv_udp: ", "Packet from:");
+        //  printf("message received :: sender ID=%d: content=%s\n", ntohl(msg.hostid), msg.message);
+        // printf("message received :: command=%d\n", ntohs(msg.cmd));
+        if (host_id == 0)
+        {
+            pthread_mutex_lock(&lock);
+            if (in_cr)
+            {
+                pthread_cond_wait(&cond1, &lock);
+            }
+            else
+            {
+                in_cr = true;
+                enqueue(&queue, msg);
+                printf("Enqueued a message! \n");
+                printQueue(&queue);
+                in_cr = false;
+                pthread_cond_signal(&cond1);
+            }
+            pthread_mutex_unlock(&lock);
+            // printf("Enqueue successful\n");
+            // printQueue(&queue);
+        }
+    }
+    return NULL;
+}
+int main()
+{
+    struct sockaddr_in s_in;
+
+    pthread_t pid1, pid2, pid3;
+
+    // Read host information from the file and get the host ID
+    const char *filename = "./process.hosts";
+    hosts = readHostsFromFile(filename);
+    host_id = get_host_id(filename);
+    if (host_id < 0 || host_id > 4)
+    {
+        perror("Host does not exist in process.hosts file\n");
+        return 1;
+    }
+
+    socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (socket_fd == -1)
+    {
+        perror("send_udp:socket");
+        exit(1);
+    }
+    /*
+       In order to attach a name to the socket created above, first fill
+       in the appropriate blanks in an inet socket address data structure
+       called "s_in". We blindly pick port number 0x3333. The second step
+       is to BIND the address to the socket. If port 0x3333 is in use, the
+       bind system call will fail detectably.
+    */
+
+    bzero((char *)&s_in, sizeof(s_in)); /* They say you must do this    */
+
+    s_in.sin_family = (short)AF_INET;
+    s_in.sin_addr.s_addr = htonl(INADDR_ANY); /* WILDCARD */
+    s_in.sin_port = htons((unsigned short)UDP_PORT);
+    // printsin(&s_in, "RECV_UDP", "Local socket is:");
+    fflush(stdout);
+
+    /*
+       bind port 0x3333 on the current host to the socket accessed through
+       socket_fd. If port in use, die.
+    */
+    if (bind(socket_fd, (struct sockaddr *)&s_in, sizeof(s_in)) < 0)
+    {
+        perror("recv_udp:bind");
+        exit(1);
+    }
+
+    if (pthread_create(&pid1, NULL, listener_thread, NULL) != 0)
+    {
+        perror("error creating listener thread: ");
+        return 1;
+    }
+    if (pthread_create(&pid2, NULL, resolver_thread, NULL) != 0)
+    {
+        perror("error creating resolver thread: ");
+        return 1;
+    }
+    // if (host_id == 0 && pthread_create(&pid3, NULL, printer_thread, NULL) != 0)
+    // {
+    //     perror("error creating printer thread: ");
+    //     return 1;
+    // }
+
+    while (1)
+        ;
+
+    return 0;
+}
