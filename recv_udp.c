@@ -76,19 +76,29 @@ void *resolver_thread(void *arg)
 
             switch (ntohs(mymsg->cmd))
             {
+            case READ:
+                printf("Read Message\n");
+                /*find length of data array*/
+                char temp_arr[128], md5_temp_arr[32];
+                int len = 0;
+                while (local_data[len] != 0 && len < 32)
+                    len++;
+                for (int i = 0; i < len; i++)
+                    temp_arr[i] = (char)local_data[i];
+                temp_arr[strlen(temp_arr)] = '\0';
+                byte2md5(temp_arr, strlen(temp_arr), md5_temp_arr);
+                printf("md5: %s\n", md5_temp_arr);
+                break;
             case WRITE:
                 printf("Write message\n");
                 reply_sequence = ntohs(mymsg->seq);
                 /*find length of data array*/
-                int len = 0;
+                len = 0;
                 while (mymsg->data[len] != 0 && len < 32)
                     len++;
                 // printf("%d \n", len);
                 // for (int i = 0; i < len; i++)
                 //     printf("%d ", mymsg->data[i]);
-
-                // for (int i = 0; i < len; i++)
-                //     temp_arr[i] = (char)msg.data[i];
 
                 /*Copy to local_data*/
                 memcpy(&local_data[ntohs(mymsg->seq) * 32], mymsg->data, len * sizeof(int));
@@ -119,11 +129,11 @@ void *resolver_thread(void *arg)
                     reply.cmd = htons(WRITE_ACK);
                     reply.seq = mymsg->seq;
                     send_message(socket_fd, host_id, inet_ntoa(from.sin_addr), reply);
-                    printf("Sent back WRITE ACK");
+                    printf("Sent back WRITE ACK\n");
                 }
                 break;
             default:
-                printf("Wrong command");
+                printf("Wrong command\n");
             }
         }
     }

@@ -70,7 +70,11 @@ int main(int argc, char **argv)
 
     strcpy(local_data, "Hi howa reajsnfuvnsiudfodvmioeruvsdfncerv");
 
-    broadcast_write_request(socket_fd, local_data, hosts, host_id);
+    // broadcast_write_request(socket_fd, local_data, hosts, host_id);
+
+    struct msg_packet msg;
+    msg.cmd = htons(READ);
+    send_message(socket_fd, host_id, "137.148.142.121", msg);
 
     // printf("Local host data: ");
     // for (int i = 0; i < 128; i++)
