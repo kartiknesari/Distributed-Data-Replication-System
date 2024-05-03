@@ -74,7 +74,23 @@ int main(int argc, char **argv)
 
     struct msg_packet msg;
     msg.cmd = htons(READ);
-    send_message(socket_fd, host_id, "137.148.142.121", msg);
+    send_message(socket_fd, host_id, "turing39.eecs.csuohio.edu", msg);
+
+    msg.cmd = htons(WRITE);
+    msg.seq = htons(0);
+    srand(time(NULL));
+    for (int i = 0; i < 32; i++)
+        msg.data[i] = rand() % 100;
+    send_message(socket_fd, host_id, "turing36.eecs.csuohio.edu", msg);
+
+    msg.data[0] = 15;
+    send_message(socket_fd, host_id, "turing37.eecs.csuohio.edu", msg);
+
+    msg.seq = htons(2);
+    send_message(socket_fd, host_id, "turing39.eecs.csuohio.edu", msg);
+
+    msg.cmd = htons(READ);
+    send_message(socket_fd, host_id, "turing38.eecs.csuohio.edu", msg);
 
     // printf("Local host data: ");
     // for (int i = 0; i < 128; i++)

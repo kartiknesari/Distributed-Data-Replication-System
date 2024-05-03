@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <time.h>
 #include "headers/myudp.h"
 #include "headers/utilities.h"
 #include "headers/udp_procedures.h"
@@ -77,8 +78,10 @@ void *resolver_thread(void *arg)
             switch (ntohs(mymsg->cmd))
             {
             case READ:
+                // The program stops working without this line, how?
                 printf("Read Message\n");
                 /*find length of data array*/
+                struct msg_packet reply;
                 char temp_arr[128], md5_temp_arr[32];
                 int len = 0;
                 while (local_data[len] != 0 && len < 32)
@@ -88,22 +91,28 @@ void *resolver_thread(void *arg)
                 temp_arr[strlen(temp_arr)] = '\0';
                 byte2md5(temp_arr, strlen(temp_arr), md5_temp_arr);
                 printf("md5: %s\n", md5_temp_arr);
+                for (int i = 0; i < 32; i++)
+                    reply.data[i] = (unsigned int)md5_temp_arr[i];
+                reply.cmd = ntohs(READ_REPLY);
+                reply.seq = ntohs(1);
+                send_message(socket_fd, host_id, inet_ntoa(from.sin_addr), reply);
                 break;
             case WRITE:
-                printf("Write message\n");
+                // printf("Write message\n");
                 reply_sequence = ntohs(mymsg->seq);
                 /*find length of data array*/
-                len = 0;
-                while (mymsg->data[len] != 0 && len < 32)
-                    len++;
+                // len = 0;
+                // while (mymsg->data[len] != 0 && len < 32)
+                //     len++;
                 // printf("%d \n", len);
                 // for (int i = 0; i < len; i++)
                 //     printf("%d ", mymsg->data[i]);
 
                 /*Copy to local_data*/
-                memcpy(&local_data[ntohs(mymsg->seq) * 32], mymsg->data, len * sizeof(int));
+                memcpy(&local_data[ntohs(mymsg->seq) * 32], mymsg->data, 32 * sizeof(int));
+                printf("\n");
                 for (int i = 0; i < 128; i++)
-                    printf("%d ", local_data[i]);
+                    printf("%d:%d ", i, local_data[i]);
                 printf("\n");
 
                 /*Send back reply or broadcast message depending on if its primary server*/
@@ -119,10 +128,6 @@ void *resolver_thread(void *arg)
                 while (host_id == 0 && reply_counter < 3)
                     ;
                 reply_counter = 0;
-                // printf("Array after write\n");
-                // for (int i = 0; i < 128; i++)
-                //     printf("%d ", local_data[i]);
-                // printf("\n");
                 if (host_id == 0)
                 {
                     struct msg_packet reply;
@@ -161,7 +166,7 @@ void *listener_thread(void *arg)
         {
             reply_counter++;
         }
-        else if (host_id == 0 || !strcmp(inet_ntoa(from.sin_addr), "137.148.142.121"))
+        else if (host_id == 0 || !strcmp(inet_ntoa(from.sin_addr), "137.148.142.121") || ntohs(msg.cmd) == READ)
         {
             pthread_mutex_lock(&lock);
             if (in_cr)
@@ -181,7 +186,8 @@ void *listener_thread(void *arg)
         }
         else
         {
-            printf(" ");
+            printf("Redirecting Message\n");
+            send_message(socket_fd, host_id, "turing36.eecs.csuohio.edu", msg);
         }
     }
     return NULL;
@@ -191,7 +197,7 @@ int main()
 {
     struct sockaddr_in s_in;
 
-    pthread_t pid1, pid2, pid3;
+    pthread_t pid1, pid2;
 
     // Read host information from the file and get the host ID
     const char *filename = "./process.hosts";
@@ -245,11 +251,6 @@ int main()
         perror("error creating resolver thread: ");
         return 1;
     }
-    // if (host_id == 0 && pthread_create(&pid3, NULL, printer_thread, NULL) != 0)
-    // {
-    //     perror("error creating printer thread: ");
-    //     return 1;
-    // }
 
     while (1)
         ;
