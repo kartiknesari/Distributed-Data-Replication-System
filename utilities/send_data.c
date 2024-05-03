@@ -41,6 +41,7 @@ int send_message(int socket_fd, int hostid, const char *destination, struct msg_
         perror("send_udp:sendto");
         return -1; // Indicate failure
     }
+    // printf("Message sent to %s \n", destination);
 
     return 0; // Indicate success
 }
@@ -60,39 +61,29 @@ void broadcast_message(int socket_fd, HostInfo *hosts, int host_id, struct msg_p
             strcpy(temp_hostname, hosts[i].hostname);
             strcat(temp_hostname, ".eecs.csuohio.edu");
             send_message(socket_fd, host_id, temp_hostname, msg);
-            printf("Sent message to %s\n", temp_hostname);
+            // printf("Sent message to %s\n", temp_hostname);
             free(temp_hostname);
         }
     }
 }
 
-int broadcast_write_request(int socket_fd, int local_data[128], int counter, HostInfo *hosts, int host_id)
+int broadcast_write_request(int socket_fd, char local_data[128], HostInfo *hosts, int host_id)
 {
     struct msg_packet write_msg;
 
     write_msg.cmd = htons(WRITE);
-
-    int temp_counter = counter;
+    int temp_arr[128];
     // printf("Within write message: \n");
-    for (int i = 0; i <= counter / data_packet_size && temp_counter > 0; i++)
+    for (int i = 0; i <= strlen(local_data); i++)
+        temp_arr[i] = (int)local_data[i];
+    for (int i = 0; i <= strlen(local_data) / data_packet_size; i++)
     {
         write_msg.seq = htons(i);
-        unsigned long data_size;
-        if (temp_counter > data_packet_size)
-        {
-            data_size = sizeof(int) * 32;
-            temp_counter -= 32;
-        }
-        else
-        {
-            data_size = sizeof(int) * temp_counter;
-            temp_counter = 0;
-        }
-        memcpy(write_msg.data, &local_data[i * 32], data_size);
-        broadcast_message(socket_fd, hosts, host_id, write_msg);
+        memcpy(write_msg.data, &temp_arr[i * 32], 32 * sizeof(int));
         // for (int i = 0; i < 32; i++)
         //     printf("%d:%d ", i, write_msg.data[i]);
         // printf("\n");
+        broadcast_message(socket_fd, hosts, host_id, write_msg);
     }
     return 0;
 }

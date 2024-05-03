@@ -13,5 +13,6 @@ typedef struct
 HostInfo *readHostsFromFile(const char *filename);
 int get_host_id(const char *filename);
 int find_length(int local_arr[128]);
+void byte2md5(const char *data, int length, char *md5buf);
 
 #endif

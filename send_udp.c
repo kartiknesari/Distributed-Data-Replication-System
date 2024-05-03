@@ -1,6 +1,6 @@
 #include <signal.h>
 #include <errno.h>
-#include <strings.h>
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -18,8 +18,7 @@ int main(int argc, char **argv)
     struct sockaddr_in dest;
     struct hostent *gethostbyname();
 
-    int counter = 0;
-    int local_data[128];
+    char local_data[128];
 
     if (argc != 1)
     {
@@ -69,13 +68,9 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    for (int i = 0; i < 99; i++)
-    {
-        local_data[i] = i;
-        counter++;
-    }
+    strcpy(local_data, "Hi howa reajsnfuvnsiudfodvmioeruvsdfncerv");
 
-    broadcast_write_request(socket_fd, local_data, counter, hosts, host_id);
+    broadcast_write_request(socket_fd, local_data, hosts, host_id);
 
     // printf("Local host data: ");
     // for (int i = 0; i < 128; i++)

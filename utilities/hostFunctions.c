@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <unistd.h>
+#include <openssl/evp.h>
 #include "../headers/utilities.h"
 
 HostInfo *readHostsFromFile(const char *filename)
@@ -74,11 +76,35 @@ int get_host_id(const char *filename)
 
 int find_length(int local_arr[128])
 {
-    char temp_arr[128];
+    printf("Find length local array:\n");
+    char char_arr[128];
     for (int i = 0; i < 128; i++)
-        temp_arr[i] = (char)local_arr[i];
-    int j = 1;
-    while (temp_arr[j] != '\0')
-        j++;
-    return j;
+        char_arr[i] = (char)local_arr[i];
+
+    for (int i = 0; i < 128; i++)
+        printf("%c ", char_arr[i]);
+    printf("\n");
+    int i = 1;
+
+    while (char_arr[i] != '\0')
+    {
+        i++;
+    }
+    return i;
+}
+
+void byte2md5(const char *data, int length, char *md5buf)
+{
+    EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
+    const EVP_MD *md = EVP_md5();
+    unsigned char md_value[EVP_MAX_MD_SIZE];
+    unsigned int md_len, i;
+    EVP_DigestInit_ex(mdctx, md, NULL);
+    EVP_DigestUpdate(mdctx, data, length);
+    EVP_DigestFinal_ex(mdctx, md_value, &md_len);
+    EVP_MD_CTX_free(mdctx);
+    for (i = 0; i < md_len; i++)
+    {
+        snprintf(&(md5buf[i * 2]), 16 * 2, "%02x", md_value[i]);
+    }
 }

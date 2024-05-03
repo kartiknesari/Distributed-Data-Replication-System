@@ -23,6 +23,9 @@ HostInfo *hosts;
 JobQueue queue;
 int counter = 0;
 int local_data[128];
+struct sockaddr_in from;
+int reply_sequence = 0;
+int reply_counter = 0;
 
 // Declaration of thread condition variable
 pthread_cond_t cond1 = PTHREAD_COND_INITIALIZER;
@@ -64,16 +67,62 @@ void *resolver_thread(void *arg)
             {
                 in_cr = true;
                 mymsg = dequeue(&queue);
-                printf("Dequeued a message! \n");
-                printQueue(&queue);
+                // printf("Dequeued a message! \n");
+                // printQueue(&queue);
                 in_cr = false;
                 pthread_cond_signal(&cond1);
             }
             pthread_mutex_unlock(&lock);
 
-            if (mymsg->cmd == WRITE)
+            switch (ntohs(mymsg->cmd))
             {
-                printf("Write command\n");
+            case WRITE:
+                printf("Write message\n");
+                reply_sequence = ntohs(mymsg->seq);
+                /*find length of data array*/
+                int len = 0;
+                while (mymsg->data[len] != 0 && len < 32)
+                    len++;
+                // printf("%d \n", len);
+                // for (int i = 0; i < len; i++)
+                //     printf("%d ", mymsg->data[i]);
+
+                // for (int i = 0; i < len; i++)
+                //     temp_arr[i] = (char)msg.data[i];
+
+                /*Copy to local_data*/
+                memcpy(&local_data[ntohs(mymsg->seq) * 32], mymsg->data, len * sizeof(int));
+                for (int i = 0; i < 128; i++)
+                    printf("%d ", local_data[i]);
+                printf("\n");
+
+                // if (host_id == 0)
+                //     broadcast_message(socket_fd, hosts, host_id, msg);
+                // else
+                // {
+                //     struct msg_packet reply;
+                //     reply.cmd = htons(WRITE_ACK);
+                //     reply.seq = msg.seq;
+                //     send_message(socket_fd, host_id, inet_ntoa(from.sin_addr), reply);
+                // }
+                // while (host_id == 0 && reply_counter < 3)
+                //     ;
+                // reply_counter = 0;
+                // printf("Array after write\n");
+                // for (int i = 0; i < 128; i++)
+                //     printf("%d ", local_data[i]);
+                // printf("\n");
+                // if (host_id == 0)
+                // {
+                //     struct msg_packet reply;
+                //     reply.cmd = htons(WRITE_ACK);
+                //     reply.seq = mymsg->seq;
+                //     send_message(socket_fd, host_id, inet_ntoa(from.sin_addr), reply);
+                //     // printf("Sent back WRITE ACK");
+                // }
+                //     break;
+                // default:
+                //     printf("Wrong command");
             }
         }
     }
@@ -83,7 +132,6 @@ void *listener_thread(void *arg)
 {
     struct msg_packet msg;
     socklen_t fsize;
-    struct sockaddr_in from;
     int cc;
 
     initializeQueue(&queue);
@@ -98,7 +146,11 @@ void *listener_thread(void *arg)
         // printsin(&from, "recv_udp: ", "Packet from:");
         //  printf("message received :: sender ID=%d: content=%s\n", ntohl(msg.hostid), msg.message);
         // printf("message received :: command=%d\n", ntohs(msg.cmd));
-        if (host_id == 0)
+        if (ntohs(msg.cmd) == WRITE_ACK && ntohs(msg.seq) == reply_sequence)
+        {
+            reply_counter++;
+        }
+        else if (host_id == 0 || !strcmp(inet_ntoa(from.sin_addr), "137.148.142.121"))
         {
             pthread_mutex_lock(&lock);
             if (in_cr)
@@ -109,18 +161,21 @@ void *listener_thread(void *arg)
             {
                 in_cr = true;
                 enqueue(&queue, msg);
-                printf("Enqueued a message! \n");
-                printQueue(&queue);
+                // printf("Enqueued a message! \n");
+                // printQueue(&queue);
                 in_cr = false;
                 pthread_cond_signal(&cond1);
             }
             pthread_mutex_unlock(&lock);
-            // printf("Enqueue successful\n");
-            // printQueue(&queue);
+        }
+        else
+        {
+            printf(" ");
         }
     }
     return NULL;
 }
+
 int main()
 {
     struct sockaddr_in s_in;
