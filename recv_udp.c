@@ -96,33 +96,34 @@ void *resolver_thread(void *arg)
                     printf("%d ", local_data[i]);
                 printf("\n");
 
-                // if (host_id == 0)
-                //     broadcast_message(socket_fd, hosts, host_id, msg);
-                // else
-                // {
-                //     struct msg_packet reply;
-                //     reply.cmd = htons(WRITE_ACK);
-                //     reply.seq = msg.seq;
-                //     send_message(socket_fd, host_id, inet_ntoa(from.sin_addr), reply);
-                // }
-                // while (host_id == 0 && reply_counter < 3)
-                //     ;
-                // reply_counter = 0;
+                /*Send back reply or broadcast message depending on if its primary server*/
+                if (host_id == 0)
+                    broadcast_message(socket_fd, hosts, host_id, *mymsg);
+                else
+                {
+                    struct msg_packet reply;
+                    reply.cmd = htons(WRITE_ACK);
+                    reply.seq = mymsg->seq;
+                    send_message(socket_fd, host_id, inet_ntoa(from.sin_addr), reply);
+                }
+                while (host_id == 0 && reply_counter < 3)
+                    ;
+                reply_counter = 0;
                 // printf("Array after write\n");
                 // for (int i = 0; i < 128; i++)
                 //     printf("%d ", local_data[i]);
                 // printf("\n");
-                // if (host_id == 0)
-                // {
-                //     struct msg_packet reply;
-                //     reply.cmd = htons(WRITE_ACK);
-                //     reply.seq = mymsg->seq;
-                //     send_message(socket_fd, host_id, inet_ntoa(from.sin_addr), reply);
-                //     // printf("Sent back WRITE ACK");
-                // }
-                //     break;
-                // default:
-                //     printf("Wrong command");
+                if (host_id == 0)
+                {
+                    struct msg_packet reply;
+                    reply.cmd = htons(WRITE_ACK);
+                    reply.seq = mymsg->seq;
+                    send_message(socket_fd, host_id, inet_ntoa(from.sin_addr), reply);
+                    printf("Sent back WRITE ACK");
+                }
+                break;
+            default:
+                printf("Wrong command");
             }
         }
     }
