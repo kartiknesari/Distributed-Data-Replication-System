@@ -1,5 +1,3 @@
-dummy.c
-dummy2.c
-recv_udp
+receiver
 *.o
-send_udp
+send_msg

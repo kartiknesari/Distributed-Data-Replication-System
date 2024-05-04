@@ -49,26 +49,17 @@ int main(int argc, char **argv)
     */
 
     bzero((char *)&dest, sizeof(dest)); /* They say you must do this */
-    // if ((hostptr = gethostbyname(argv[1])) == NULL)
-    // {
-    //     fprintf(stderr, "send_udp: invalid host name, %s\n", argv[1]);
-    //     exit(1);
-    // }
-    // dest.sin_family = AF_INET;
-    // bcopy(hostptr->h_addr_list[0], (char *)&dest.sin_addr, hostptr->h_length);
-    // dest.sin_port = htons((unsigned short)UDP_PORT);
 
     // Read host information from the file and get the host ID
     const char *filename = "./process.hosts";
-    HostInfo *hosts = readHostsFromFile(filename);
     int host_id = get_host_id(filename);
-    if (host_id < 0 || host_id > 4)
-    {
-        perror("Host does not exist in process.hosts file\n");
-        return 1;
-    }
+    // if (host_id < 0 || host_id > 4)
+    // {
+    //     perror("Host does not exist in process.hosts file\n");
+    //     return 1;
+    // }
 
-    strcpy(local_data, "Hi howa reajsnfuvnsiudfodvmioeruvsdfncerv");
+    // strcpy(local_data, "Hi howa reajsnfuvnsiudfodvmioeruvsdfncerv");
 
     // broadcast_write_request(socket_fd, local_data, hosts, host_id);
 
@@ -91,11 +82,6 @@ int main(int argc, char **argv)
 
     msg.cmd = htons(READ);
     send_message(socket_fd, host_id, "turing38.eecs.csuohio.edu", msg);
-
-    // printf("Local host data: ");
-    // for (int i = 0; i < 128; i++)
-    //     printf("%d ", local_data[i]);
-    // printf("\n");
 
     return (0);
 }

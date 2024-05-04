@@ -1,13 +1,13 @@
 CC=gcc
 CFLAGS=-g -Wall
 
-all: recv_udp send_udp 
+receiver: recv_udp.o
+	$(CC) -o receiver recv_udp.o ./utilities/*.c -pthread -lcrypto -lssl
 
-recv_udp: recv_udp.o
-	$(CC) -o recv_udp recv_udp.o ./utilities/*.c -pthread -lcrypto -lssl
+send_msg: send_udp.o
+	$(CC) -o send_msg send_udp.o ./utilities/*.c -lcrypto -lssl
 
-send_udp: send_udp.o
-	$(CC) -o send_udp send_udp.o ./utilities/*.c -lcrypto -lssl
+all: receiver send_msg
 
 clean:
 	rm -f *.o recv_udp send_udp 
