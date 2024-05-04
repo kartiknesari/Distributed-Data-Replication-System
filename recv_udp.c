@@ -92,10 +92,15 @@ void *resolver_thread(void *arg)
                 printf("md5: %s\n", md5_temp_arr);
                 // for (int i = 0; i < 32; i++)
                 //     reply.data[i] = (unsigned int)md5_temp_arr[i];
-                for (int i = 0; i < 8; i++)
-                {
-                    sscanf(md5_temp_arr + i * 4, "%4x", &reply.data[i]);
-                }
+                // for (int i = 0; i < 8; i++)
+                // {
+                //     sscanf(md5_temp_arr + i * 4, "%4x", &reply.data[i]);
+                // }
+                memcpy(reply.data, md5_temp_arr, 32);
+                printf("\n");
+                for (int i = 0; i < 32; i++)
+                    printf("%d ", reply.data[i]);
+                printf("\n");
                 reply.cmd = ntohs(READ_REPLY);
                 reply.seq = ntohs(1);
                 // printf("Sender address: %s\n", inet_ntoa(from.sin_addr));

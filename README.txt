@@ -18,7 +18,11 @@ design details:
         not empty, the front of the queue is popped to process the message within. Once the content is written to the primary
         server's data store, this message is then broadcasted to the other servers who then replicate the data store by 
         processing the message as well. While the message is broadcasted, the primary server waits to fetch the WRITE_ACK 
-        from the replica servers. Once it receives a total of 3 WRITE_ACKs, the server replies back to the client by sending back a message with cmd = WRITE_ACK.
+        from the replica servers. Once it receives a total of 3 WRITE_ACKs, the server replies back to the client by sending back a message with 
+	      cmd = WRITE_ACK.
+        Note: The underlying assumption is that the client always sends 32 words and no partial messages are being sent. In
+        the case of partial messages, since the integer array has no sentinel value or counter to determine the length of the
+        elements in the message data array, garbage values would be copied into the data store.
 
 compiling instructions:
 
