@@ -205,7 +205,7 @@ int main()
     const char *filename = "./process.hosts";
     hosts = readHostsFromFile(filename);
     host_id = get_host_id(filename);
-    if (host_id < 0 || host_id > 4)
+    if (host_id < 0 || host_id > 3)
     {
         perror("Host does not exist in process.hosts file\n");
         return 1;

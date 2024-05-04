@@ -10,4 +10,4 @@ send_msg: send_udp.o
 all: receiver send_msg
 
 clean:
-	rm -f *.o recv_udp send_udp 
+	rm -f *.o receiver send_msg 
