@@ -1,6 +1,4 @@
-Group17 contribution: Kartik(50%), Santhosh(50%)
-
-design details:
+Design details:
 
     The system is designed using the primary server principle. A server is selected as a primary server in this server 
     cluster.
@@ -146,7 +144,3 @@ Sample Output:
     87:63 88:80 89:89 90:43 91:32 92:82 93:96 94:73 95:50 96:0 97:0 98:0 99:0 100:0 101:0 102:0 103:0 104:0 105:0 106:0 
     107:0 108:0 109:0 110:0 111:0 112:0 113:0 114:0 115:0 116:0 117:0 118:0 119:0 120:0 121:0 122:0 123:0 124:0 125:0 126:0 
     127:0
-
-Issues/Faults:
-
-    There have been no issues noted yet.
